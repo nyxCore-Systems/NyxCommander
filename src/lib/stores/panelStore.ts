@@ -29,6 +29,8 @@ export interface TabSnapshot {
   selected: string[];
   history: HistoryItem[];
   historyIdx: number;
+  sortBy: 'name' | 'size' | 'date' | 'ext';
+  sortDir: 'asc' | 'desc';
 }
 
 // ─── Panel State ────────────────────────────────────────────────────────────
@@ -55,6 +57,9 @@ export interface PanelState {
   // History (mirrored from active tab)
   history: HistoryItem[];
   historyIdx: number;
+  // Sorting
+  sortBy: 'name' | 'size' | 'date' | 'ext';
+  sortDir: 'asc' | 'desc';
 }
 
 // ─── Store Factory ───────────────────────────────────────────────────────────
@@ -73,6 +78,8 @@ function makeTab(path: string): TabSnapshot {
     selected: [],
     history: [{ path, archiveRoot: null, archiveInner: '' }],
     historyIdx: 0,
+    sortBy: 'name',
+    sortDir: 'asc',
   };
 }
 
@@ -95,6 +102,8 @@ function createPanelStore(initialPath: string) {
     activeTabIdx: 0,
     history: initialTab.history,
     historyIdx: 0,
+    sortBy: 'name',
+    sortDir: 'asc',
   };
 
   const { subscribe, update, set } = writable<PanelState>(initial);
@@ -111,7 +120,31 @@ function createPanelStore(initialPath: string) {
       selected: [...s.selected],
       history: s.history,
       historyIdx: s.historyIdx,
+      sortBy: s.sortBy,
+      sortDir: s.sortDir,
     };
+  }
+
+  function sortEntries(entries: FileEntry[], by: PanelState['sortBy'], dir: PanelState['sortDir']): FileEntry[] {
+    const up = entries.find(e => e.name === '..');
+    const rest = entries.filter(e => e.name !== '..');
+    const dirs = rest.filter(e => e.is_dir);
+    const files = rest.filter(e => !e.is_dir);
+
+    function cmp(a: FileEntry, b: FileEntry): number {
+      let v = 0;
+      switch (by) {
+        case 'size': v = a.size - b.size; break;
+        case 'date': v = a.modified - b.modified; break;
+        case 'ext':  v = a.extension.localeCompare(b.extension); break;
+        default:     v = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      }
+      return dir === 'asc' ? v : -v;
+    }
+
+    dirs.sort(cmp);
+    files.sort(cmp);
+    return up ? [up, ...dirs, ...files] : [...dirs, ...files];
   }
 
   async function loadEntries(s: PanelState, cursorHint?: string): Promise<Partial<PanelState>> {
@@ -135,6 +168,8 @@ function createPanelStore(initialPath: string) {
       if (!s.showHidden) {
         entries = entries.filter(e => e.name === '..' || !e.is_hidden);
       }
+
+      entries = sortEntries(entries, s.sortBy, s.sortDir);
 
       // Restore cursor to a named entry if requested (e.g. after Backspace)
       let cursor = Math.min(s.cursor, Math.max(0, entries.length - 1));
@@ -211,7 +246,8 @@ function createPanelStore(initialPath: string) {
     const patch = await loadEntries(newState!);
     update(s => {
       const tabs = [...s.tabs];
-      tabs[s.activeTabIdx] = { ...tabs[s.activeTabIdx], ...patch };
+      const { selected: _sel, ...tabPatch } = patch;
+      tabs[s.activeTabIdx] = { ...tabs[s.activeTabIdx], ...tabPatch };
       return { ...s, ...patch, tabs };
     });
   }
@@ -318,7 +354,8 @@ function createPanelStore(initialPath: string) {
     const patch = await loadEntries(newState!);
     update(s => {
       const tabs = [...s.tabs];
-      tabs[s.activeTabIdx] = { ...tabs[s.activeTabIdx], ...patch };
+      const { selected: _sel, ...tabPatch } = patch;
+      tabs[s.activeTabIdx] = { ...tabs[s.activeTabIdx], ...tabPatch };
       return { ...s, ...patch, tabs };
     });
   }
@@ -342,6 +379,8 @@ function createPanelStore(initialPath: string) {
         selected: new Set(tab.selected),
         history: tab.history,
         historyIdx: tab.historyIdx,
+        sortBy: tab.sortBy ?? 'name',
+        sortDir: tab.sortDir ?? 'asc',
         filter: '',
         loading: true,
       };
@@ -369,6 +408,8 @@ function createPanelStore(initialPath: string) {
         selected: new Set(tab.selected),
         history: tab.history,
         historyIdx: tab.historyIdx,
+        sortBy: tab.sortBy ?? 'name',
+        sortDir: tab.sortDir ?? 'asc',
         filter: '',
         loading: true,
       };
@@ -454,6 +495,37 @@ function createPanelStore(initialPath: string) {
     update(s => ({ ...s, ...patch }));
   }
 
+  async function setSort(by: PanelState['sortBy'], dir: PanelState['sortDir']) {
+    let newState: PanelState;
+    update(s => {
+      newState = { ...s, sortBy: by, sortDir: dir, loading: true };
+      const tabs = [...s.tabs];
+      tabs[s.activeTabIdx] = { ...tabs[s.activeTabIdx], sortBy: by, sortDir: dir };
+      return { ...newState, tabs };
+    });
+    const patch = await loadEntries(newState!);
+    update(s => ({ ...s, ...patch }));
+  }
+
+  function selectByPattern(pattern: string) {
+    update(s => {
+      const re = new RegExp(
+        '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$',
+        'i'
+      );
+      const next = new Set(s.entries.filter(e => e.name !== '..' && re.test(e.name)).map(e => e.path));
+      return { ...s, selected: next };
+    });
+  }
+
+  function invertSelection() {
+    update(s => {
+      const all = new Set(s.entries.filter(e => e.name !== '..').map(e => e.path));
+      const next = new Set([...all].filter(p => !s.selected.has(p)));
+      return { ...s, selected: next };
+    });
+  }
+
   return {
     subscribe,
     navigate,
@@ -474,6 +546,9 @@ function createPanelStore(initialPath: string) {
     setFilter,
     toggleFlatView,
     toggleShowHidden,
+    setSort,
+    selectByPattern,
+    invertSelection,
   };
 }
 

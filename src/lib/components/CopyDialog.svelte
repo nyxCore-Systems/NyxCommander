@@ -6,7 +6,7 @@
   export let dstDir: string;
   export let move: boolean = false;
 
-  const dispatch = createEventDispatcher<{ done: void; cancel: void }>();
+  const dispatch = createEventDispatcher<{ done: void; cancel: void; conflict: { conflicts: string[]; destination: string } }>();
 
   let destination = dstDir;
   let running = false;
@@ -19,6 +19,12 @@
     running = true;
     error = '';
     try {
+      const conflicts = await invoke<string[]>('check_conflicts', { srcs, dstDir: destination });
+      if (conflicts.length > 0) {
+        running = false;
+        dispatch('conflict', { conflicts, destination });
+        return;
+      }
       if (move) {
         await invoke('move_items', { srcs, dstDir: destination });
       } else {

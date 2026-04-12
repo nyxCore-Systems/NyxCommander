@@ -26,7 +26,13 @@ export type DialogState =
   | { kind: 'plugin-viewer'; path: string; mimeType: string; pluginId: string }
   | { kind: 'plugin-manager' }
   | { kind: 'menu';         section: MenuSection }
-  | { kind: 'goto';         startPath?: string };
+  | { kind: 'goto';         startPath?: string }
+  | { kind: 'select-pattern' }
+  | { kind: 'compress';     paths: string[]; dstDir: string }
+  | { kind: 'checksum';     paths: string[] }
+  | { kind: 'properties';   path: string }
+  | { kind: 'overwrite';    srcs: string[]; dstDir: string; conflicts: string[]; move: boolean }
+  | { kind: 'extract';      archivePath: string; dstDir: string };
 
 interface UiState {
   activePanel: ActivePanel;

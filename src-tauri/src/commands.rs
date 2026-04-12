@@ -995,3 +995,160 @@ pub fn get_system_stats(state: tauri::State<'_, SystemState>) -> CmdResult<Syste
         process_count: sys.processes().len(),
     })
 }
+
+// ─── New commands ─────────────────────────────────────────────────────────────
+
+/// Check which files in srcs already exist in dst_dir.
+/// Returns the names (not full paths) of conflicting files.
+#[command]
+pub fn check_conflicts(srcs: Vec<String>, dst_dir: String) -> Vec<String> {
+    let dst = Path::new(&dst_dir);
+    srcs.iter().filter_map(|src| {
+        let name = Path::new(src).file_name()?;
+        if dst.join(name).exists() { Some(name.to_string_lossy().into_owned()) } else { None }
+    }).collect()
+}
+
+/// Copy srcs into dst_dir with collision handling.
+/// mode: "overwrite" | "skip" | "rename" (auto-rename adds _1, _2, …)
+#[command]
+pub fn copy_items_mode(srcs: Vec<String>, dst_dir: String, mode: String) -> CmdResult<()> {
+    let dst = Path::new(&dst_dir);
+    for src_str in &srcs {
+        let src = Path::new(src_str);
+        let Some(name) = src.file_name() else { continue };
+        let mut dst_path = dst.join(name);
+        if dst_path.exists() {
+            match mode.as_str() {
+                "skip" => continue,
+                "rename" => {
+                    let stem = src.file_stem().unwrap_or(name).to_string_lossy();
+                    let ext  = src.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_default();
+                    let mut i = 1u32;
+                    loop {
+                        let candidate = dst.join(format!("{}_{}{}", stem, i, ext));
+                        if !candidate.exists() { dst_path = candidate; break; }
+                        i += 1;
+                    }
+                }
+                _ => {} // "overwrite": fall through and overwrite
+            }
+        }
+        if src.is_dir() {
+            copy_dir_recursive(src, &dst_path)?;
+        } else {
+            std::fs::copy(src, &dst_path)?;
+        }
+    }
+    Ok(())
+}
+
+/// Create a ZIP archive at `dst_path` containing all `srcs`.
+/// Each src can be a file or directory; paths inside the zip are relative to
+/// the common parent of the srcs.
+#[command]
+pub fn create_zip(srcs: Vec<String>, dst_path: String) -> CmdResult<()> {
+    use zip::{ZipWriter, write::SimpleFileOptions, CompressionMethod};
+
+    let file = std::fs::File::create(&dst_path)?;
+    let mut zip = ZipWriter::new(file);
+    let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+    for src_str in &srcs {
+        let src = Path::new(src_str);
+        let base = src.parent().unwrap_or(Path::new(""));
+        add_to_zip(&mut zip, src, base, opts)?;
+    }
+    zip.finish().map_err(|e| CmdError::Other(e.to_string()))?;
+    Ok(())
+}
+
+fn add_to_zip<W: std::io::Write + std::io::Seek>(
+    zip: &mut zip::ZipWriter<W>,
+    path: &Path,
+    base: &Path,
+    opts: zip::write::SimpleFileOptions,
+) -> CmdResult<()> {
+    use std::io::{Read, Write};
+    let rel = path.strip_prefix(base).unwrap_or(path);
+    let rel_str = rel.to_string_lossy().replace('\\', "/");
+    if path.is_dir() {
+        zip.add_directory(format!("{}/", rel_str), opts)
+            .map_err(|e| CmdError::Other(e.to_string()))?;
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                add_to_zip(zip, &entry.path(), base, opts)?;
+            }
+        }
+    } else {
+        zip.start_file(rel_str, opts)
+            .map_err(|e| CmdError::Other(e.to_string()))?;
+        let mut f = std::fs::File::open(path)?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+        zip.write_all(&buf)?;
+    }
+    Ok(())
+}
+
+/// Compute SHA-256 checksum of a file. Returns lowercase hex string.
+#[command]
+pub fn compute_checksum(path: String) -> CmdResult<String> {
+    use sha2::{Sha256, Digest};
+    use std::io::Read;
+    let mut file = std::fs::File::open(&path)?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 65536];
+    loop {
+        let n = file.read(&mut buf)?;
+        if n == 0 { break; }
+        hasher.update(&buf[..n]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+/// Recursively compute total size of a directory in bytes.
+#[command]
+pub fn get_dir_size(path: String) -> u64 {
+    fn walk(p: &Path) -> u64 {
+        let Ok(entries) = std::fs::read_dir(p) else { return 0 };
+        entries.flatten().map(|e| {
+            let meta = e.metadata();
+            if e.path().is_dir() { walk(&e.path()) }
+            else { meta.map(|m| m.len()).unwrap_or(0) }
+        }).sum()
+    }
+    walk(Path::new(&path))
+}
+
+/// Return Unix permission mode bits for a path (e.g. 0o755 → 493).
+/// Returns 0 on non-Unix platforms.
+#[command]
+pub fn get_file_mode(path: String) -> u32 {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(&path)
+            .map(|m| m.permissions().mode() & 0o7777)
+            .unwrap_or(0)
+    }
+    #[cfg(not(unix))]
+    { 0 }
+}
+
+/// Set Unix permission mode bits for a path.
+#[command]
+pub fn set_file_mode(path: String, mode: u32) -> CmdResult<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(mode);
+        std::fs::set_permissions(&path, perms)?;
+        return Ok(());
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (path, mode);
+        Ok(())
+    }
+}

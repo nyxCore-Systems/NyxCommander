@@ -28,7 +28,7 @@
   export let active: boolean = false;
   export let diffPick: string | null = null;
 
-  const dispatch = createEventDispatcher<{ activate: void }>();
+  const dispatch = createEventDispatcher<{ activate: void; contextmenu: { x: number; y: number; entry: FileEntry | null } }>();
 
   $: state = $store as PanelState;
   $: colorRules = $colorRulesStore;
@@ -149,6 +149,31 @@
     }
   }
 
+  let freeBytes: number = 0;
+
+  // Reactive: update free space when path changes
+  $: if (state.path) updateFreeSpace(state.path);
+
+  async function updateFreeSpace(path: string) {
+    try {
+      const vols = await invoke<Array<{name: string; path: string; total_bytes: number; free_bytes: number}>>('list_volumes');
+      // Find the volume whose path is the longest prefix of our path
+      let best = vols[0];
+      for (const v of vols) {
+        if (path.startsWith(v.path) && v.path.length > (best?.path.length ?? 0)) {
+          best = v;
+        }
+      }
+      freeBytes = best?.free_bytes ?? 0;
+    } catch { freeBytes = 0; }
+  }
+
+  function formatFree(bytes: number): string {
+    if (bytes <= 0) return '';
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(0)} MB free`;
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB free`;
+  }
+
   function formatStatus(s: PanelState): string {
     const files = s.entries.filter(e => !e.is_dir && e.name !== '..').length;
     const dirs  = s.entries.filter(e => e.is_dir && e.name !== '..').length;
@@ -188,16 +213,23 @@
     />
   {/if}
 
-  <div class="col-headers">
+  <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+  <div class="col-headers" on:contextmenu|stopPropagation|preventDefault>
     <span class="col-icon"></span>
-    <span class="col-name">Name</span>
+    <span class="col-name sortable" on:click|stopPropagation={() => {
+      store.setSort('name', state.sortBy === 'name' && state.sortDir === 'asc' ? 'desc' : 'asc');
+    }}>Name{state.sortBy === 'name' ? (state.sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</span>
     {#each columnPlugins as col}
       <span class="col-plugin" style="width: {col.columnWidth ?? 72}px">
         {col.columnName ?? col.name}
       </span>
     {/each}
-    <span class="col-size">Size</span>
-    <span class="col-date">Date</span>
+    <span class="col-size sortable" on:click|stopPropagation={() => {
+      store.setSort('size', state.sortBy === 'size' && state.sortDir === 'asc' ? 'desc' : 'asc');
+    }}>Size{state.sortBy === 'size' ? (state.sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</span>
+    <span class="col-date sortable" on:click|stopPropagation={() => {
+      store.setSort('date', state.sortBy === 'date' && state.sortDir === 'asc' ? 'desc' : 'asc');
+    }}>Date{state.sortBy === 'date' ? (state.sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</span>
     <div class="header-controls" on:click|stopPropagation>
       <button
         class="hdr-btn"
@@ -214,7 +246,12 @@
     </div>
   </div>
 
-  <div class="file-list" bind:this={listEl}>
+  <div class="file-list" bind:this={listEl}
+    on:contextmenu|preventDefault={e => {
+      const entry = active ? (state.entries[state.cursor] ?? null) : null;
+      dispatch('contextmenu', { x: e.clientX, y: e.clientY, entry });
+    }}
+  >
     {#if state.loading}
       <div class="message">Loading…</div>
     {:else if state.error}
@@ -242,7 +279,7 @@
   </div>
 
   {#if filterMode}
-    <div class="filter-bar" on:click|stopPropagation>
+    <div class="filter-bar" on:click|stopPropagation on:contextmenu|stopPropagation|preventDefault>
       <span class="filter-label">Filter:</span>
       <input
         bind:this={filterInputEl}
@@ -262,6 +299,9 @@
     <button class="hist-btn" disabled={state.historyIdx <= 0} on:click|stopPropagation={() => store.back()} title="Back (Alt+←)">‹</button>
     <button class="hist-btn" disabled={state.historyIdx >= state.history.length - 1} on:click|stopPropagation={() => store.forward()} title="Forward (Alt+→)">›</button>
     <span class="status-text">{formatStatus(state)}</span>
+    {#if freeBytes > 0 && !state.archiveRoot}
+      <span class="free-space">{formatFree(freeBytes)}</span>
+    {/if}
   </div>
 </div>
 
@@ -327,6 +367,9 @@
   .col-size { width: 64px; text-align: right; flex-shrink: 0; }
   .col-date { width: 118px; text-align: right; flex-shrink: 0; }
   .panel.active .col-headers { color: var(--text); }
+
+  .sortable { cursor: pointer; }
+  .sortable:hover { color: var(--accent); }
 
   .header-controls { display: flex; gap: 2px; margin-left: auto; }
   .hdr-btn {
@@ -400,6 +443,12 @@
   .hist-btn:hover:not(:disabled) { color: var(--accent); }
   .hist-btn:disabled { opacity: 0.3; cursor: default; }
   .status-text { flex: 1; }
+  .free-space {
+    color: var(--text-dim);
+    font-size: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
 
   .message {
     padding: 12px 8px;

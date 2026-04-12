@@ -28,8 +28,14 @@
   import HelpViewer from './HelpViewer.svelte';
   import PluginViewer from './PluginViewer.svelte';
   import PluginManager from './PluginManager.svelte';
+  import SelectPatternDialog from './SelectPatternDialog.svelte';
+  import CompressDialog from './CompressDialog.svelte';
+  import OverwriteDialog from './OverwriteDialog.svelte';
+  import ChecksumDialog from './ChecksumDialog.svelte';
+  import PropertiesDialog from './PropertiesDialog.svelte';
+  import ContextMenu from './ContextMenu.svelte';
   import type { MenuSection } from '$lib/stores/uiStore';
-  import type { PanelState } from '$lib/stores/panelStore';
+  import type { PanelState, FileEntry } from '$lib/stores/panelStore';
   import { pluginStore } from '$lib/stores/pluginStore';
   import { invoke } from '@tauri-apps/api/core';
 
@@ -255,11 +261,35 @@
       }
     }
 
-    // Open terminal at active panel's directory (Ctrl+Shift+T / Cmd+Shift+T)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
-      e.preventDefault();
-      invoke('open_terminal', { path: active.path }).catch(console.error);
-      return;
+    // Ctrl/Cmd + Shift shortcuts
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+      if (e.key === 'T') {
+        e.preventDefault();
+        invoke('open_terminal', { path: active.path }).catch(console.error);
+        return;
+      }
+      if (e.key === 'S') {
+        e.preventDefault();
+        uiStore.setDialog({ kind: 'select-pattern' });
+        return;
+      }
+      if (e.key === 'I') {
+        e.preventDefault();
+        activeStore().invertSelection();
+        return;
+      }
+      if (e.key === 'C') {
+        e.preventDefault();
+        const entry = active.entries[active.cursor];
+        if (entry) navigator.clipboard.writeText(entry.path).catch(console.error);
+        return;
+      }
+      if (e.key === 'Z') {
+        e.preventDefault();
+        const paths = getSrcs();
+        if (paths.length) uiStore.setDialog({ kind: 'compress', paths, dstDir: active.path });
+        return;
+      }
     }
 
     // Action plugin keybindings (Ctrl+Shift+<key>)
@@ -513,6 +543,52 @@
   $: quickViewEntry = ui.quickViewVisible
     ? (active.entries[active.cursor] ?? null)
     : null;
+
+  // ── Context menu ─────────────────────────────────────────────────────────────
+
+  let ctxMenu: { x: number; y: number; entry: FileEntry | null } | null = null;
+
+  function openContextMenu(e: CustomEvent<{ x: number; y: number; entry: FileEntry | null }>) {
+    ctxMenu = e.detail;
+  }
+
+  function handleContextAction(e: CustomEvent<string>) {
+    const action = e.detail;
+    const entry = ctxMenu?.entry ?? null;
+    ctxMenu = null;
+
+    if (action === 'open' && entry) {
+      if (entry.is_dir) activeStore().navigate(entry.path);
+      else if (isTextFile(entry)) uiStore.setDialog({ kind: 'view', path: entry.path });
+      else invoke('open_file', { path: entry.path }).catch(console.error);
+    } else if (action === 'open-system' && entry) {
+      invoke('open_file', { path: entry.path }).catch(console.error);
+    } else if (action === 'rename' && entry) {
+      uiStore.setDialog({ kind: 'rename', src: entry.path, currentName: entry.name });
+    } else if (action === 'copy') {
+      const srcs = getSrcs();
+      if (srcs.length) uiStore.setDialog({ kind: 'copy', srcs, dstDir: inactive.path });
+    } else if (action === 'move') {
+      const srcs = getSrcs();
+      if (srcs.length) uiStore.setDialog({ kind: 'move', srcs, dstDir: inactive.path });
+    } else if (action === 'delete') {
+      const paths = getSrcs();
+      if (paths.length) uiStore.setDialog({ kind: 'delete', paths });
+    } else if (action === 'copy-path' && entry) {
+      navigator.clipboard.writeText(entry.path).catch(console.error);
+    } else if (action === 'compress') {
+      const paths = getSrcs();
+      if (paths.length) uiStore.setDialog({ kind: 'compress', paths, dstDir: active.path });
+    } else if (action === 'checksum' && entry && !entry.is_dir) {
+      uiStore.setDialog({ kind: 'checksum', paths: [entry.path] });
+    } else if (action === 'properties' && entry) {
+      uiStore.setDialog({ kind: 'properties', path: entry.path });
+    } else if (action === 'terminal') {
+      invoke('open_terminal', { path: active.path }).catch(console.error);
+    } else if (action === 'mkdir') {
+      uiStore.setDialog({ kind: 'mkdir', parentPath: active.path });
+    }
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -530,6 +606,7 @@
         active={ui.activePanel === 'left'}
         diffPick={ui.diffPick}
         on:activate={() => uiStore.setActivePanel('left')}
+        on:contextmenu={openContextMenu}
       />
       <div class="divider"></div>
       <Panel
@@ -538,6 +615,7 @@
         active={ui.activePanel === 'right'}
         diffPick={ui.diffPick}
         on:activate={() => uiStore.setActivePanel('right')}
+        on:contextmenu={openContextMenu}
       />
       {#if ui.quickViewVisible}
         <QuickViewPane entry={quickViewEntry} />
@@ -557,20 +635,24 @@
 
     <!-- Dialogs -->
     {#if ui.dialog.kind === 'copy'}
+      {@const cd = ui.dialog}
       <CopyDialog
-        srcs={ui.dialog.srcs}
-        dstDir={ui.dialog.dstDir}
+        srcs={cd.srcs}
+        dstDir={cd.dstDir}
         move={false}
         on:done={handleDialogDone}
         on:cancel={() => uiStore.closeDialog()}
+        on:conflict={e => uiStore.setDialog({ kind: 'overwrite', srcs: cd.srcs, dstDir: e.detail.destination, conflicts: e.detail.conflicts, move: false })}
       />
     {:else if ui.dialog.kind === 'move'}
+      {@const md = ui.dialog}
       <CopyDialog
-        srcs={ui.dialog.srcs}
-        dstDir={ui.dialog.dstDir}
+        srcs={md.srcs}
+        dstDir={md.dstDir}
         move={true}
         on:done={handleDialogDone}
         on:cancel={() => uiStore.closeDialog()}
+        on:conflict={e => uiStore.setDialog({ kind: 'overwrite', srcs: md.srcs, dstDir: e.detail.destination, conflicts: e.detail.conflicts, move: true })}
       />
     {:else if ui.dialog.kind === 'delete'}
       <DeleteDialog
@@ -665,6 +747,50 @@
         on:close={() => uiStore.closeDialog()}
         on:navigate={e => { uiStore.closeDialog(); activeStore().navigate(e.detail.path); }}
         on:set-section={e => uiStore.setDialog({ kind: 'menu', section: e.detail.section })}
+      />
+    {:else if ui.dialog.kind === 'overwrite'}
+      {@const owd = ui.dialog}
+      <OverwriteDialog
+        conflicts={owd.conflicts}
+        srcs={owd.srcs}
+        dstDir={owd.dstDir}
+        move={owd.move}
+        on:done={handleDialogDone}
+        on:cancel={() => uiStore.closeDialog()}
+      />
+    {:else if ui.dialog.kind === 'select-pattern'}
+      <SelectPatternDialog
+        on:select={e => { activeStore().selectByPattern(e.detail.pattern); uiStore.closeDialog(); }}
+        on:cancel={() => uiStore.closeDialog()}
+      />
+    {:else if ui.dialog.kind === 'compress'}
+      {@const czd = ui.dialog}
+      <CompressDialog
+        paths={czd.paths}
+        dstDir={czd.dstDir}
+        on:done={handleDialogDone}
+        on:cancel={() => uiStore.closeDialog()}
+      />
+    {:else if ui.dialog.kind === 'checksum'}
+      <ChecksumDialog
+        paths={ui.dialog.paths}
+        on:close={() => uiStore.closeDialog()}
+      />
+    {:else if ui.dialog.kind === 'properties'}
+      <PropertiesDialog
+        path={ui.dialog.path}
+        on:close={() => uiStore.closeDialog()}
+      />
+    {/if}
+
+    {#if ctxMenu}
+      <ContextMenu
+        x={ctxMenu.x}
+        y={ctxMenu.y}
+        entry={ctxMenu.entry}
+        activePath={active.path}
+        on:action={handleContextAction}
+        on:close={() => { ctxMenu = null; }}
       />
     {/if}
   {/if}

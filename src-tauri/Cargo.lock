@@ -2427,6 +2427,7 @@ dependencies = [
  "notify",
  "serde",
  "serde_json",
+ "sha2",
  "sysinfo",
  "tar",
  "tauri",

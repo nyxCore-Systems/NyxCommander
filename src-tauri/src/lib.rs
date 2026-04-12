@@ -65,6 +65,13 @@ pub fn run() {
             set_plugin_enabled,
             install_plugin,
             open_terminal,
+            check_conflicts,
+            copy_items_mode,
+            create_zip,
+            compute_checksum,
+            get_dir_size,
+            get_file_mode,
+            set_file_mode,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Nyx.Commander");
