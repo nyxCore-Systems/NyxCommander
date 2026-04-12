@@ -174,15 +174,24 @@ Everything is also accessible from inside the app with `F1`.
 | `Space` | Toggle selection |
 | `Cmd+A` | Select all |
 | `Cmd+T` / `Cmd+W` | New / close tab |
+| `Ctrl+1`–`9` | Switch to tab N |
 | `Cmd+Q` | Toggle Quick View pane |
 | `` Ctrl+` `` | Toggle command bar |
 | `F1` | Help |
 | `F2` | Rename |
+| `F3` | Process explorer |
+| `F4` | Open with system app |
 | `F5` | Copy to other panel |
 | `F6` | Move to other panel |
 | `F7` | New directory |
 | `F8` | Delete |
 | `F9` | Cycle theme |
+| `F10` | Quit |
+| `d` | Directory sync (compare two panels) |
+| `Shift+D` | Diff the two files under cursor (one per panel) |
+| `Cmd+F` | Find files |
+| `Cmd+H` | Hex viewer |
+| `Cmd+M` | Multi-rename selected files |
 | `Escape` | Open menu |
 
 Type any printable character in a panel to start a quick filter.
