@@ -21,10 +21,11 @@
   onMount(() => inputEl?.focus());
 
   function handleKey(e: KeyboardEvent) {
+    e.stopPropagation();
     if (e.key === 'Escape') { dispatch('close'); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); selectedIdx = Math.min(selectedIdx + 1, results.length - 1); }
     if (e.key === 'ArrowUp')   { e.preventDefault(); selectedIdx = Math.max(selectedIdx - 1, 0); }
-    if (e.key === 'Enter' && selectedIdx >= 0) openSelected();
+    if (e.key === 'Enter' && selectedIdx >= 0) { e.preventDefault(); openSelected(); }
   }
 
   async function doSearch() {

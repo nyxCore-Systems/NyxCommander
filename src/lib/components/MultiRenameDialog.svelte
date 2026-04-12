@@ -15,6 +15,9 @@
   let counterPad = 2;
   let error = '';
   let running = false;
+  let searchInputEl: HTMLInputElement;
+
+  onMount(() => searchInputEl?.focus());
 
   interface Preview { original: string; newName: string; error: string }
   let previews: Preview[] = [];
@@ -93,7 +96,7 @@
       <div class="row">
         <label>
           <span>Search</span>
-          <input bind:value={searchPat} placeholder="text or regex…" spellcheck="false" />
+          <input bind:this={searchInputEl} bind:value={searchPat} placeholder="text or regex…" spellcheck="false" />
         </label>
         <label class="check">
           <input type="checkbox" bind:checked={useRegex} />

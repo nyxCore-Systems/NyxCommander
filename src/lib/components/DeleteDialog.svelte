@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
 
   export let paths: string[];
@@ -8,6 +8,9 @@
 
   let running = false;
   let error = '';
+  let dialogEl: HTMLElement;
+
+  onMount(() => dialogEl?.focus());
 
   const names = paths.map(p => p.split('/').at(-1) ?? p);
 
@@ -25,14 +28,14 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') { e.stopPropagation(); dispatch('cancel'); }
-    if (e.key === 'Enter')  { e.stopPropagation(); confirm(); }
+    if (e.key === 'Enter' && !running) { e.stopPropagation(); confirm(); }
   }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 <div class="overlay" on:click|self={() => dispatch('cancel')}>
   <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-  <div class="dialog" role="dialog" tabindex="-1" on:keydown={handleKeydown}>
+  <div class="dialog" role="dialog" tabindex="-1" bind:this={dialogEl} on:keydown={handleKeydown}>
     <div class="dialog-title danger">Delete {paths.length} item{paths.length !== 1 ? 's' : ''}?</div>
     <div class="dialog-body">
       <div class="file-list">

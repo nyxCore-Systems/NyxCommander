@@ -103,6 +103,7 @@
   const LINE_PX = 18;
 
   function handleKey(e: KeyboardEvent) {
+    e.stopPropagation();
     switch (e.key) {
       case 'Escape':    dispatch('close'); break;
       case 'ArrowDown': scroll(LINE_PX);   e.preventDefault(); break;

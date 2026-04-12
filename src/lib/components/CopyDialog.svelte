@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
 
   export let srcs: string[];
@@ -11,6 +11,9 @@
   let destination = dstDir;
   let running = false;
   let error = '';
+  let inputEl: HTMLInputElement;
+
+  onMount(() => inputEl?.focus());
 
   async function confirm() {
     running = true;
@@ -30,7 +33,7 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') { e.stopPropagation(); dispatch('cancel'); }
-    if (e.key === 'Enter')  { e.stopPropagation(); confirm(); }
+    if (e.key === 'Enter' && !running) { e.stopPropagation(); confirm(); }
   }
 </script>
 
@@ -41,7 +44,7 @@
     <div class="dialog-title">{move ? 'Move' : 'Copy'} {srcs.length} item{srcs.length !== 1 ? 's' : ''}</div>
     <div class="dialog-body">
       <label for="dst-input">Destination:</label>
-      <input id="dst-input" bind:value={destination} disabled={running} />
+      <input id="dst-input" bind:this={inputEl} bind:value={destination} disabled={running} />
       {#if error}<div class="dialog-error">{error}</div>{/if}
     </div>
     <div class="dialog-footer">

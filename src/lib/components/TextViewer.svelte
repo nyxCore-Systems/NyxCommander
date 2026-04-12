@@ -130,6 +130,7 @@
   const LINE_PX = 18; // 12px font × 1.5 line-height
 
   function handleKey(e: KeyboardEvent) {
+    e.stopPropagation();
     switch (e.key) {
       case 'Escape':   dispatch('close'); break;
       case 'F4':       openExternal(); break;

@@ -32,13 +32,13 @@
   let dragging = false;
   let containerEl: HTMLElement;
 
+  // 64 MB ceiling — large enough for any reasonable image
+  const IMAGE_MAX = 64 * 1024 * 1024;
+
   async function loadImage(path: string): Promise<string> {
     const e = ext(path);
-    const size = (await invoke<{ data: number[]; file_size: number; offset: number }>(
-      'read_file_bytes', { path, offset: 0, count: 0 }
-    )).file_size;
     const chunk = await invoke<{ data: number[]; file_size: number; offset: number }>(
-      'read_file_bytes', { path, offset: 0, count: size }
+      'read_file_bytes', { path, offset: 0, count: IMAGE_MAX }
     );
     const bytes = new Uint8Array(chunk.data);
     let binary = '';

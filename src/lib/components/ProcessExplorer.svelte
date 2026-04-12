@@ -7,10 +7,13 @@
 
   $: state = $processStore;
 
-  onMount(() => processStore.start());
+  let overlayEl: HTMLElement;
+
+  onMount(() => { processStore.start(); overlayEl?.focus(); });
   onDestroy(() => processStore.stop());
 
   function handleKey(e: KeyboardEvent) {
+    e.stopPropagation();
     if (e.key === 'Escape') { dispatch('close'); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); moveCursor(1); }
     if (e.key === 'ArrowUp')   { e.preventDefault(); moveCursor(-1); }
@@ -64,7 +67,7 @@
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="overlay" on:keydown={handleKey} tabindex="-1">
+<div class="overlay" on:keydown={handleKey} tabindex="-1" bind:this={overlayEl}>
   <div class="explorer" role="dialog" tabindex="-1" aria-label="Process Explorer">
 
     <div class="title-bar">

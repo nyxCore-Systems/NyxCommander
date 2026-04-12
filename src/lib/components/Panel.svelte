@@ -184,7 +184,7 @@
       path={state.path}
       {active}
       on:navigate={e => store.navigate(e.detail)}
-      on:editpath={() => uiStore.setDialog({ kind: 'goto' })}
+      on:editpath={() => uiStore.setDialog({ kind: 'goto', startPath: state.path })}
     />
   {/if}
 

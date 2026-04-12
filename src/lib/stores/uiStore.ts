@@ -16,7 +16,6 @@ export type DialogState =
   | { kind: 'multi-rename'; paths: string[] }
   | { kind: 'processes' }
   | { kind: 'find';         startPath: string }
-  | { kind: 'goto' }
   | { kind: 'view';         path: string }
   | { kind: 'hex';          path: string }
   | { kind: 'diff';         left: string; right: string }

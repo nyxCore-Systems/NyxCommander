@@ -7,7 +7,9 @@
     close: void;
   }>();
 
-  let inputValue = '~/';
+  export let startPath: string = '';
+
+  let inputValue = '';
   let completions: string[] = [];
   let compIdx = -1;
   let error = '';
@@ -17,10 +19,11 @@
   onMount(async () => {
     try {
       homePath = await invoke<string>('get_home');
-      inputValue = homePath + '/';
+      // Use the provided startPath if given, otherwise default to home
+      inputValue = startPath || (homePath + '/');
     } catch {
       homePath = '';
-      inputValue = '/';
+      inputValue = startPath || '/';
     }
     await tick();
     inputEl?.focus();

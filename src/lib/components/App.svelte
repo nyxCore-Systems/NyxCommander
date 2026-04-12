@@ -169,6 +169,9 @@
       return;
     }
 
+    // No further shortcuts while any dialog is open
+    if (ui.dialog.kind !== 'none') return;
+
     // History navigation: Alt+Left / Alt+Right
     if (e.altKey && !e.metaKey && !e.ctrlKey) {
       if (e.key === 'ArrowLeft') {
@@ -202,7 +205,7 @@
       if (e.key === 'g') {
         e.preventDefault();
         if (ui.dialog.kind === 'none')
-          uiStore.setDialog({ kind: 'goto' });
+          uiStore.setDialog({ kind: 'goto', startPath: active.path });
         return;
       }
       if (e.key === 't') {
@@ -251,8 +254,6 @@
         return;
       }
     }
-
-    if (ui.dialog.kind !== 'none') return;
 
     // Action plugin keybindings (Ctrl+Shift+<key>)
     if (e.ctrlKey && e.shiftKey && !e.metaKey) {
@@ -313,13 +314,13 @@
               activeStore().navigateArchive(active.archiveRoot, entry.path);
             }
           }
-          // Files inside archive: Cmd+Enter = extract+open
+          // Files inside archive: Cmd+Enter = extract to inactive panel
           else if (e.metaKey || e.ctrlKey) {
-            uiStore.setDialog({
-              kind: 'extract',
+            invoke('extract_from_archive', {
               archivePath: active.archiveRoot,
+              innerPaths: [entry.path],
               dstDir: inactive.path,
-            });
+            }).then(() => refreshBoth()).catch(console.error);
           }
           break;
         }
@@ -630,6 +631,7 @@
       />
     {:else if ui.dialog.kind === 'goto'}
       <GotoDialog
+        startPath={ui.dialog.startPath ?? ''}
         on:navigate={e => { uiStore.closeDialog(); activeStore().navigate(e.detail.path); }}
         on:close={() => uiStore.closeDialog()}
       />
