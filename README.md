@@ -6,7 +6,7 @@
 
 **Keyboard-first dual-pane file manager for macOS.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](src-tauri/tauri.conf.json)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](src-tauri/tauri.conf.json)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://tauri.app)
 [![Built with Tauri](https://img.shields.io/badge/Tauri-2-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte)](https://svelte.dev)
