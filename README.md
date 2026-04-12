@@ -7,7 +7,7 @@
 **Keyboard-first dual-pane file manager for macOS.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](src-tauri/tauri.conf.json)
-[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square&logo=apple)](https://tauri.app)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://tauri.app)
 [![Built with Tauri](https://img.shields.io/badge/Tauri-2-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte)](https://svelte.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -18,7 +18,7 @@
 
 ---
 
-Nyx.Commander is a native macOS file manager in the tradition of Total Commander and FAR Manager — two panels, instant keyboard navigation, F-key file operations — wrapped in a crisp dark UI with pixel-art icons. The whole thing runs on a Rust backend via Tauri 2, with a SvelteKit frontend. No Electron, no web server.
+Nyx.Commander is a native file manager for macOS and Linux in the tradition of Total Commander and FAR Manager — two panels, instant keyboard navigation, F-key file operations — wrapped in a crisp dark UI with pixel-art icons. The whole thing runs on a Rust backend via Tauri 2, with a SvelteKit frontend. No Electron, no web server.
 
 What makes it different from most modern takes on the dual-pane formula: a **full plugin system** that lets you drop new viewers, columns, and virtual filesystems into `~/.nyx/plugins/` and have them appear live, no restart required.
 
@@ -200,7 +200,7 @@ Type any printable character in a panel to start a quick filter.
 
 ## Building from Source
 
-**Requirements:** macOS 12+, [Rust](https://rustup.rs) stable, [Node.js](https://nodejs.org) 18+, [pnpm](https://pnpm.io)
+**Requirements:** macOS 12+ or Linux, [Rust](https://rustup.rs) stable, [Node.js](https://nodejs.org) 18+, [pnpm](https://pnpm.io)
 
 ```bash
 pnpm install        # install JS dependencies

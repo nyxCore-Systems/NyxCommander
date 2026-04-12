@@ -135,7 +135,10 @@ pub fn list_dir(path: String) -> CmdResult<Vec<FileEntry>> {
     Ok(entries)
 }
 
-/// List mounted volumes. On macOS reads /Volumes; other platforms return home dir.
+/// List mounted volumes.
+/// - macOS: reads /Volumes
+/// - Linux: parses /proc/mounts, filters to real storage filesystems
+/// - other: returns home directory as single entry
 #[command]
 pub fn list_volumes() -> CmdResult<Vec<VolumeInfo>> {
     #[cfg(target_os = "macos")]
@@ -152,7 +155,62 @@ pub fn list_volumes() -> CmdResult<Vec<VolumeInfo>> {
         }
         return Ok(vols);
     }
-    #[cfg(not(target_os = "macos"))]
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::io::{BufRead, BufReader};
+        use std::collections::HashSet;
+
+        // Filesystem types that represent real storage (not pseudo/virtual fs).
+        const REAL_FS: &[&str] = &[
+            "ext2", "ext3", "ext4", "btrfs", "xfs", "zfs", "jfs", "reiserfs",
+            "nilfs2", "f2fs", "ntfs", "ntfs3", "vfat", "exfat", "hfsplus",
+            "fuseblk", "fuse", "overlay", "squashfs",
+        ];
+
+        let f = std::fs::File::open("/proc/mounts")?;
+        let reader = BufReader::new(f);
+        let mut vols = Vec::new();
+        let mut seen = HashSet::new();
+
+        for line in reader.lines().flatten() {
+            // Format: <device> <mountpoint> <fstype> <options> <dump> <pass>
+            let mut parts = line.splitn(6, ' ');
+            let _device     = parts.next().unwrap_or("");
+            let mount_point = parts.next().unwrap_or("");
+            let fs_type     = parts.next().unwrap_or("");
+
+            if !REAL_FS.contains(&fs_type) { continue; }
+            if !seen.insert(mount_point.to_string()) { continue; }
+
+            let name = if mount_point == "/" {
+                "root".to_string()
+            } else {
+                std::path::Path::new(mount_point)
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| mount_point.to_string())
+            };
+
+            let (total_bytes, free_bytes) = statvfs_bytes(mount_point);
+            vols.push(VolumeInfo { name, path: mount_point.to_string(), total_bytes, free_bytes });
+        }
+
+        if vols.is_empty() {
+            // Fallback: at minimum expose root so the panel isn't blank
+            let (total_bytes, free_bytes) = statvfs_bytes("/");
+            vols.push(VolumeInfo {
+                name: "root".to_string(),
+                path: "/".to_string(),
+                total_bytes,
+                free_bytes,
+            });
+        }
+
+        return Ok(vols);
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/".to_string());
         Ok(vec![VolumeInfo {
@@ -164,7 +222,8 @@ pub fn list_volumes() -> CmdResult<Vec<VolumeInfo>> {
     }
 }
 
-#[cfg(target_os = "macos")]
+// statvfs is POSIX — available on both macOS and Linux.
+#[cfg(unix)]
 fn statvfs_bytes(path: &str) -> (u64, u64) {
     use std::ffi::CString;
     let Ok(cpath) = CString::new(path) else { return (0, 0) };
@@ -285,6 +344,8 @@ pub fn open_file(path: String, app: tauri::AppHandle) -> CmdResult<()> {
 /// Get home directory path.
 #[command]
 pub fn get_home() -> String {
+    // HOME is standard on macOS and Linux.
+    // Fallback to / so the panel always has somewhere to start.
     std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
 }
 
