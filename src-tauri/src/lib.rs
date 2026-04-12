@@ -64,6 +64,7 @@ pub fn run() {
             panel_list_dir,
             set_plugin_enabled,
             install_plugin,
+            open_terminal,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Nyx.Commander");

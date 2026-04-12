@@ -931,6 +931,50 @@ pub struct SyncEntry {
 }
 
 /// Get aggregate system memory + CPU stats.
+/// Open an external terminal emulator at the given directory.
+/// Prefers iTerm2 (checked in /Applications and ~/Applications) and
+/// falls back to Terminal.app. Uses AppleScript for iTerm2 so the new
+/// window is cwd'd correctly; uses `open -a Terminal <path>` for Terminal.app.
+#[command]
+pub fn open_terminal(path: String) -> CmdResult<()> {
+    let safe_path = path.replace('\'', "'\\''"); // single-quote escape for shell/AppleScript
+
+    // Detect iTerm2 (handles both "iTerm.app" and "iTerm2.app" names)
+    let home = std::env::var("HOME").unwrap_or_default();
+    let iterm_candidates = [
+        "/Applications/iTerm.app".to_string(),
+        "/Applications/iTerm2.app".to_string(),
+        format!("{home}/Applications/iTerm.app"),
+        format!("{home}/Applications/iTerm2.app"),
+    ];
+    let has_iterm = iterm_candidates
+        .iter()
+        .any(|p| std::path::Path::new(p).exists());
+
+    if has_iterm {
+        let script = format!(
+            "tell application \"iTerm\"\n\
+                create window with default profile\n\
+                tell current session of current window\n\
+                    write text \"cd '{safe_path}'\"\n\
+                end tell\n\
+                activate\n\
+            end tell"
+        );
+        std::process::Command::new("osascript")
+            .args(["-e", &script])
+            .spawn()
+            .map_err(|e| CmdError::Other(format!("osascript: {e}")))?;
+    } else {
+        // Terminal.app honours the directory argument directly
+        std::process::Command::new("open")
+            .args(["-a", "Terminal", &path])
+            .spawn()
+            .map_err(|e| CmdError::Other(format!("open Terminal: {e}")))?;
+    }
+    Ok(())
+}
+
 #[command]
 pub fn get_system_stats(state: tauri::State<'_, SystemState>) -> CmdResult<SystemStats> {
     let mut sys = state.0.lock().map_err(|e| CmdError::Other(e.to_string()))?;

@@ -255,6 +255,13 @@
       }
     }
 
+    // Open terminal at active panel's directory (Ctrl+Shift+T / Cmd+Shift+T)
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+      e.preventDefault();
+      invoke('open_terminal', { path: active.path }).catch(console.error);
+      return;
+    }
+
     // Action plugin keybindings (Ctrl+Shift+<key>)
     if (e.ctrlKey && e.shiftKey && !e.metaKey) {
       const chord = `ctrl+shift+${e.key.toLowerCase()}`;
@@ -487,6 +494,7 @@
     if (action === 'cmd') { uiStore.toggleCmdBar(); return; }
     if (action === 'quickview') { uiStore.toggleQuickView(); return; }
     if (action === 'transfers') { uiStore.setDialog({ kind: 'transfers' }); return; }
+    if (action === 'terminal') { invoke('open_terminal', { path: active.path }).catch(console.error); return; }
     if (action === 'f1') { uiStore.setDialog({ kind: 'help' }); return; }
     const keyMap: Record<string, string> = {
       f2: 'F2', f3: 'F3', f4: 'F4', f5: 'F5',

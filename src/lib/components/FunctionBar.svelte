@@ -55,6 +55,13 @@
   >
     <span class="fn-label">QV</span>
   </button>
+  <button
+    class="fn-key extra"
+    title="Open terminal here (Ctrl+Shift+T)"
+    on:click={() => dispatch('action', 'terminal')}
+  >
+    <span class="fn-label">&gt;_</span>
+  </button>
   {#if pendingTransfers > 0}
     <button
       class="fn-key extra transfers"
