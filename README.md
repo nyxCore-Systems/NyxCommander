@@ -1,21 +1,26 @@
 <div align="center">
 
-<img src="src-tauri/icons/128x128@2x.png" width="96" alt="Nyx.Commander icon">
+<img src="src-tauri/icons/128x128@2x.png" width="108" alt="Nyx.Commander">
 
 # Nyx.Commander
 
-**A pixel-art dual-pane file manager for macOS — built with Tauri and Svelte.**
+**Keyboard-first dual-pane file manager for macOS.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](src-tauri/tauri.conf.json)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square&logo=apple)](https://tauri.app)
-[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
-[![Svelte](https://img.shields.io/badge/frontend-Svelte%205-FF3E00?style=flat-square&logo=svelte)](https://svelte.dev)
-[![TypeScript](https://img.shields.io/badge/types-TypeScript-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-[![Rust](https://img.shields.io/badge/backend-Rust-CE422B?style=flat-square&logo=rust)](https://www.rust-lang.org)
+[![Built with Tauri](https://img.shields.io/badge/Tauri-2-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
+[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte)](https://svelte.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Rust](https://img.shields.io/badge/Rust-CE422B?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 </div>
 
 ---
+
+Nyx.Commander is a native macOS file manager in the tradition of Total Commander and FAR Manager — two panels, instant keyboard navigation, F-key file operations — wrapped in a crisp dark UI with pixel-art icons. The whole thing runs on a Rust backend via Tauri 2, with a SvelteKit frontend. No Electron, no web server.
+
+What makes it different from most modern takes on the dual-pane formula: a **full plugin system** that lets you drop new viewers, columns, and virtual filesystems into `~/.nyx/plugins/` and have them appear live, no restart required.
 
 <div align="center">
 
@@ -23,50 +28,52 @@
 
 </div>
 
-## Overview
-
-Nyx.Commander is a keyboard-first dual-pane file manager in the tradition of Total Commander and FAR Manager, reimagined as a native macOS app. It keeps the workflow that power users love — two panels, F-key operations, instant navigation — wrapped in a crisp dark UI with pixel-art icons and a full plugin system.
-
-No Electron. No web server. Native Rust backend with a SvelteKit frontend rendered via Tauri's WebKit layer.
-
 ---
 
 ## Features
 
-### Dual-panel navigation
-Two independent panels, each with their own tab history. Switch with `Tab`, open a new tab with `Cmd+T`, jump to any path with `Cmd+G`, or click the path bar to edit it directly.
+**Navigation**
+- Two independent panels, each with their own tab stack and navigation history
+- Click the path bar to jump to any location, or use `Cmd+G` for fuzzy path input with autocomplete
+- `Cmd+=` mirrors the active panel's path to the other — handy for copy/move workflows
+- Quick filter: start typing in any panel to narrow the file list instantly
 
-### Archive browsing
-Browse ZIP, TAR, GZip, BZip2, XZ, DOCX, XLSX, and more as if they were directories — press `Enter` to walk in, `Backspace` to walk out. No extraction required.
+**Archive browsing** — walk into ZIP, TAR.GZ, TAR.BZ2, TAR.XZ, DOCX, XLSX and more with `Enter`, navigate subdirectories inside them, and `Backspace` back out. No extraction dialog.
 
-### Viewers
-- **Text viewer** — syntax-aware, monospace, scrollable (`Enter` on any text/code file)
-- **Hex viewer** — full hex dump with ASCII pane and status bar
-- **Diff viewer** — side-by-side colored diff between any two files
-- **Image viewer** — via the built-in plugin; pixel-perfect scaling for small pixel art assets
+**Viewers**
+- Text viewer with monospace rendering for code and config files
+- Hex viewer with ASCII pane, offset display, and byte inspector
+- Side-by-side diff viewer for any two files
 
-### Tools
-- **Process explorer** — live CPU + memory table, kill any process (`F3`)
-- **Quick View pane** — preview the file under the cursor without opening a dialog (`Cmd+Q`)
-- **Go To Path** — fuzzy path input with history autocomplete (`Cmd+G`)
-- **Command bar** — run shell commands with the current path as `$cwd` (`` Ctrl+` ``)
-- **Dir sync** — compare two directories side by side, copy differences in one click (`d`)
-- **Multi-rename** — batch-rename selected files with pattern substitution (`Cmd+M`)
+**Tools**
+- Process explorer — live CPU + memory table, sortable, kill any process (`F3`)
+- Quick View pane — sidebar preview of the file under the cursor (`Cmd+Q`)
+- Command bar — run shell commands with the panel's path as working directory (`` Ctrl+` ``)
+- Directory sync — compare two folders and copy differences in one click (`d`)
+- Multi-rename — batch rename with pattern substitution (`Cmd+M`)
 
-### Plugin system
-Four plugin categories, hot-reloaded from `~/.nyx/plugins/` — no restarts needed:
+**Themes & color rules** — four built-in themes (Neon, Classic, Matrix, Amber), a custom theme editor, and per-extension or glob-pattern file colorization, all in the menu.
 
-| Category | What it does |
-|----------|-------------|
-| **Viewer** | Renders files in a fullscreen overlay (HTML iframe, sandboxed) |
-| **Column** | Adds a metadata column to both panels (subprocess, any language) |
-| **Action** | Keyboard-triggered operation on selected files (`Ctrl+Shift+<key>`) |
-| **Panel** | Mounts a virtual filesystem (S3, FTP, custom protocols) |
+---
 
-Drag a `.nyx-plugin` file onto the Plugin Manager to install. Built-in: Image Viewer, Markdown Viewer, Git Status column.
+## Plugin System
 
-### Themes & color rules
-Four built-in themes — Neon, Classic, Matrix, Amber — switchable at any time with `F9`. Full custom theme editor in the menu. Assign highlight colors to files by glob pattern or extension.
+Four plugin categories, loaded from `~/.nyx/plugins/` and hot-reloaded on change:
+
+| Category | How it works | Example |
+|----------|-------------|---------|
+| **Viewer** | Self-contained HTML file rendered in a sandboxed iframe | Image viewer, Markdown renderer |
+| **Column** | Any executable speaking JSON-RPC over stdin/stdout | Git status, image dimensions |
+| **Action** | Same protocol, triggered by a keybinding | Compress selection, upload to S3 |
+| **Panel** | Same protocol, mounts a virtual filesystem | S3 browser, FTP, ZIP browser |
+
+Install a plugin by dropping a `.nyx-plugin` file onto the Plugin Manager. Three plugins ship built-in:
+
+- **Image Viewer** — PNG, JPG, GIF, WebP, SVG, BMP, ICO; pixel-perfect scaling for small assets
+- **Markdown Viewer** — renders `.md` / `.mdx` with headings, tables, and fenced code blocks
+- **Git Status column** — adds a `Git` column showing working-tree status per file *(disabled by default, requires Python 3 + git)*
+
+→ **[User guide: Plugins](docs/user/plugins/index.md)** · **[Plugin authoring guide](docs/user/plugins/authoring.md)**
 
 ---
 
@@ -91,13 +98,13 @@ Four built-in themes — Neon, Classic, Matrix, Amber — switchable at any time
 <td align="center" width="50%">
 
 **Quick View — Image Preview**<br>
-<img src="images/Screenshot%202026-04-12%20at%2023.12.00.png" alt="Quick View with image preview">
+<img src="images/Screenshot%202026-04-12%20at%2023.12.00.png" alt="Quick View pane showing an image">
 
 </td>
 <td align="center" width="50%">
 
 **Go To Path**<br>
-<img src="images/Screenshot%202026-04-12%20at%2022.58.02.png" alt="Go To Path dialog with autocomplete">
+<img src="images/Screenshot%202026-04-12%20at%2022.58.02.png" alt="Go To Path dialog with history autocomplete">
 
 </td>
 </tr>
@@ -119,17 +126,36 @@ Four built-in themes — Neon, Classic, Matrix, Amber — switchable at any time
 <td align="center" width="50%">
 
 **Diff Viewer**<br>
-<img src="images/Screenshot%202026-04-12%20at%2023.26.17.png" alt="Diff Viewer">
+<img src="images/Screenshot%202026-04-12%20at%2023.26.17.png" alt="Side-by-side Diff Viewer">
 
 </td>
 <td align="center" width="50%">
 
-**Built-in Help**<br>
-<img src="images/Screenshot%202026-04-12%20at%2022.57.13.png" alt="Help Viewer with search">
+**Built-in Help** (`F1`)<br>
+<img src="images/Screenshot%202026-04-12%20at%2022.57.13.png" alt="Help Viewer with full-text search">
 
 </td>
 </tr>
 </table>
+
+---
+
+## Documentation
+
+| | |
+|---|---|
+| [Overview](docs/user/01-overview.md) | What Nyx.Commander is and how it's structured |
+| [Navigation](docs/user/02-navigation.md) | Panels, tabs, path bar, history, quick filter |
+| [File Operations](docs/user/03-file-ops.md) | Copy, move, rename, delete, multi-rename |
+| [Archives](docs/user/04-archives.md) | Browsing and extracting archive files |
+| [Viewers](docs/user/05-viewers.md) | Text, hex, diff, and plugin viewers |
+| [Tools](docs/user/06-tools.md) | Process explorer, quick view, command bar, dir sync |
+| [Customization](docs/user/07-customization.md) | Themes, color rules, favorites, remotes |
+| [Keyboard Shortcuts](docs/user/08-shortcuts.md) | Full shortcut reference |
+| [Plugins — User Guide](docs/user/plugins/index.md) | Installing and managing plugins |
+| [Plugins — Authoring Guide](docs/user/plugins/authoring.md) | Writing your own plugins |
+
+Everything is also accessible from inside the app with `F1`.
 
 ---
 
@@ -138,12 +164,18 @@ Four built-in themes — Neon, Classic, Matrix, Amber — switchable at any time
 | Key | Action |
 |-----|--------|
 | `Tab` | Switch active panel |
+| `↑` `↓` `PgUp` `PgDn` | Move cursor |
 | `Enter` | Enter dir / open file / browse archive |
 | `Cmd+Enter` | Open with system app |
 | `Backspace` | Go to parent |
 | `Alt+←` / `Alt+→` | History back / forward |
 | `Cmd+G` | Go to path |
 | `Cmd+=` | Mirror current folder to other panel |
+| `Space` | Toggle selection |
+| `Cmd+A` | Select all |
+| `Cmd+T` / `Cmd+W` | New / close tab |
+| `Cmd+Q` | Toggle Quick View pane |
+| `` Ctrl+` `` | Toggle command bar |
 | `F1` | Help |
 | `F2` | Rename |
 | `F5` | Copy to other panel |
@@ -151,63 +183,24 @@ Four built-in themes — Neon, Classic, Matrix, Amber — switchable at any time
 | `F7` | New directory |
 | `F8` | Delete |
 | `F9` | Cycle theme |
-| `Space` | Toggle selection |
-| `Cmd+A` | Select all |
-| `Cmd+T` / `Cmd+W` | New / close tab |
-| `Cmd+Q` | Quick View pane |
-| `` Ctrl+` `` | Command bar |
 | `Escape` | Open menu |
 
 Type any printable character in a panel to start a quick filter.
 
 ---
 
-## Requirements
+## Building from Source
 
-- macOS 12 Monterey or later
-- [Rust](https://rustup.rs) (stable toolchain)
-- [Node.js](https://nodejs.org) 18+ and [pnpm](https://pnpm.io)
-
----
-
-## Development
+**Requirements:** macOS 12+, [Rust](https://rustup.rs) stable, [Node.js](https://nodejs.org) 18+, [pnpm](https://pnpm.io)
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Start dev server (hot-reload)
-pnpm tauri dev
-
-# Type check
-pnpm check
-
-# Production build
-pnpm tauri build
+pnpm install        # install JS dependencies
+pnpm tauri dev      # dev server with hot-reload
+pnpm check          # TypeScript + Svelte type check
+pnpm tauri build    # production .app bundle
 ```
 
-Built-in plugins live in `plugins/` at the repo root and are bootstrapped to `~/.nyx/plugins/` on first launch. To iterate on a plugin, edit in `~/.nyx/plugins/<id>/` directly — the watcher picks up changes within a second.
-
----
-
-## Writing Plugins
-
-See **[docs/user/plugins/authoring.md](docs/user/plugins/authoring.md)** for the full developer guide, or press `F1` inside the app and navigate to **Plugin Dev**.
-
-Quick start — a Python column plugin:
-
-```python
-#!/usr/bin/env python3
-import sys, json
-
-for line in sys.stdin:
-    req = json.loads(line.strip())
-    if req['method'] == 'get_columns':
-        results = [{'path': f['path'], 'value': '✓'} for f in req['params']['files']]
-        print(json.dumps({'id': req['id'], 'result': results}), flush=True)
-```
-
-Drop it in `~/.nyx/plugins/com.you.myplugin/` with a `plugin.json` manifest. Done.
+Built-in plugins live in `plugins/` and are copied to `~/.nyx/plugins/` on first launch. To work on a plugin, edit directly in `~/.nyx/plugins/<id>/` — the file watcher picks up changes within a second.
 
 ---
 
