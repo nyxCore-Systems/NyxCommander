@@ -1,0 +1,14 @@
+{
+  "id": "com.nyx.git-status",
+  "name": "Git Status",
+  "version": "1.0.0",
+  "description": "Shows git working-tree status for files in a repository",
+  "author": "Nyx",
+  "category": "column",
+  "fileExtensions": [],
+  "columnName": "Git",
+  "columnWidth": 80,
+  "entrypoint": "plugin.py",
+  "minAppVersion": "0.1.0",
+  "enabled": false
+}

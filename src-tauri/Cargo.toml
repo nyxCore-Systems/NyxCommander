@@ -1,0 +1,29 @@
+[package]
+name = "nyx-commander"
+version = "1.0.0"
+description = "Nyx.Commander — pixel-art dual-pane file manager"
+authors = ["lisa"]
+edition = "2021"
+
+[lib]
+name = "nyx_commander_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri              = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde              = { version = "1", features = ["derive"] }
+serde_json         = "1"
+thiserror          = "1"
+libc               = "0.2"
+sysinfo            = { version = "0.33", default-features = false, features = ["system"] }
+zip                = { version = "2", default-features = false, features = ["deflate", "bzip2", "zstd", "aes-crypto"] }
+tar                = "0.4"
+flate2             = "1"
+bzip2              = "0.4"
+xz2                = "0.1"
+tokio              = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
+notify             = "6"

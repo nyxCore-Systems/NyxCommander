@@ -1,0 +1,12 @@
+{
+  "id": "com.nyx.markdown-viewer",
+  "name": "Markdown Viewer",
+  "version": "1.0.0",
+  "description": "Render Markdown and MDX files with syntax-highlighted code blocks",
+  "author": "Nyx",
+  "category": "viewer",
+  "fileExtensions": ["md", "mdx", "markdown"],
+  "entrypoint": "viewer.html",
+  "minAppVersion": "0.1.0",
+  "enabled": true
+}

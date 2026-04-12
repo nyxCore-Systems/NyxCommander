@@ -1,0 +1,12 @@
+{
+  "id": "com.nyx.image-viewer",
+  "name": "Image Viewer",
+  "version": "1.0.0",
+  "description": "Preview PNG, JPG, GIF, WebP, SVG, BMP images",
+  "author": "Nyx",
+  "category": "viewer",
+  "fileExtensions": ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"],
+  "entrypoint": "viewer.html",
+  "minAppVersion": "0.1.0",
+  "enabled": true
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="marked.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #0a0e27;
+    color: #e0e0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 28px 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: #00d4ff;
+    margin: 1.4em 0 0.5em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  h1 { font-size: 1.8em; border-bottom: 1px solid #1a2060; padding-bottom: 0.3em; }
+  h2 { font-size: 1.4em; border-bottom: 1px solid #1a2060; padding-bottom: 0.2em; }
+  a { color: #00d4ff; }
+  a:hover { color: #00ff88; }
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.88em;
+    background: rgba(255,255,255,0.06);
+    padding: 0.15em 0.4em;
+    border-radius: 2px;
+    color: #00ff88;
+  }
+  pre {
+    background: #050810;
+    border: 1px solid #1a2060;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 1em 0;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: #e0e0f0;
+    font-size: 12px;
+  }
+  blockquote {
+    border-left: 3px solid #00d4ff;
+    margin: 1em 0;
+    padding: 4px 16px;
+    color: #8899bb;
+    background: rgba(0,212,255,0.04);
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td {
+    border: 1px solid #1a2060;
+    padding: 6px 12px;
+    text-align: left;
+  }
+  th { background: #0d1130; color: #00d4ff; }
+  tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  hr { border: none; border-top: 1px solid #1a2060; margin: 1.5em 0; }
+  img { max-width: 100%; }
+  ul, ol { padding-left: 1.5em; }
+  li { margin: 0.25em 0; }
+  #err {
+    color: #ff4455;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+<div id="content"></div>
+<div id="err" hidden></div>
+<script>
+  window.addEventListener('message', async function(e) {
+    var msg = e.data;
+    if (!msg || msg.type !== 'load') return;
+
+    if (msg.theme) {
+      if (msg.theme.bg) document.body.style.background = msg.theme.bg;
+      if (msg.theme.fg) document.body.style.color = msg.theme.fg;
+      if (msg.theme.accent) {
+        document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function(el) {
+          el.style.color = msg.theme.accent;
+        });
+      }
+    }
+
+    try {
+      var res = await fetch(msg.fileUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var text = await res.text();
+      document.getElementById('content').innerHTML = marked.parse(text);
+      var lines = text.split('\n').length;
+      var words = text.trim().split(/\s+/).length;
+      window.parent.postMessage({
+        type: 'status',
+        text: lines + ' lines \u00b7 ' + words + ' words \u00b7 Markdown'
+      }, '*');
+    } catch(ex) {
+      var errEl = document.getElementById('err');
+      errEl.hidden = false;
+      errEl.textContent = 'Error: ' + ex.message;
+      window.parent.postMessage({ type: 'error', message: String(ex) }, '*');
+    }
+  });
+</script>
+</body>
+</html>

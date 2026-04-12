@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e27;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: auto;
+  }
+  /* Pixel art: disable smoothing for small images shown large */
+  #img.pixel { image-rendering: pixelated; }
+  #err {
+    color: #ff4455;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+<img id="img" alt="">
+<div id="err" hidden></div>
+<script>
+  var img = document.getElementById('img');
+  var err = document.getElementById('err');
+
+  window.addEventListener('message', function(e) {
+    var msg = e.data;
+    if (!msg || msg.type !== 'load') return;
+
+    if (msg.theme && msg.theme.bg) {
+      document.body.style.background = msg.theme.bg;
+    }
+
+    img.onload = function() {
+      var w = img.naturalWidth;
+      var h = img.naturalHeight;
+      // Use pixelated rendering for small images (pixel art)
+      if (w <= 128 && h <= 128) img.classList.add('pixel');
+      var mime = (msg.mimeType || '').replace('image/', '').toUpperCase();
+      window.parent.postMessage({
+        type: 'status',
+        text: w + '\u00d7' + h + (mime ? ' \u00b7 ' + mime : '')
+      }, '*');
+    };
+    img.onerror = function() {
+      err.hidden = false;
+      err.textContent = 'Failed to load image: ' + (msg.filePath || '');
+      img.hidden = true;
+      window.parent.postMessage({ type: 'error', message: 'Image decode failed' }, '*');
+    };
+
+    img.src = msg.fileUrl;
+  });
+</script>
+</body>
+</html>
