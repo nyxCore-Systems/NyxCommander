@@ -1,6 +1,6 @@
 [package]
 name = "nyx-commander"
-version = "1.0.0"
+version = "1.1.0"
 description = "Nyx.Commander — pixel-art dual-pane file manager"
 authors = ["lisa"]
 edition = "2021"

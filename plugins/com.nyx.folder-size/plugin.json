@@ -1,0 +1,14 @@
+{
+  "id": "com.nyx.folder-size",
+  "name": "Folder Size",
+  "version": "1.0.0",
+  "description": "Shows the total disk usage of folders (and confirms file sizes) in a dedicated column",
+  "author": "Nyx",
+  "category": "column",
+  "fileExtensions": [],
+  "columnName": "Size on disk",
+  "columnWidth": 88,
+  "entrypoint": "plugin.py",
+  "minAppVersion": "1.1.0",
+  "enabled": true
+}

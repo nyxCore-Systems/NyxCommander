@@ -1,0 +1,14 @@
+{
+  "id": "com.nyx.zip-compress",
+  "name": "Zip Compress",
+  "version": "1.0.0",
+  "description": "Compress selected files and folders into a zip archive in the opposite panel",
+  "author": "Nyx",
+  "category": "action",
+  "fileExtensions": [],
+  "keybinding": "ctrl+shift+z",
+  "menuLabel": "Zip selected → opposite panel",
+  "entrypoint": "plugin.py",
+  "minAppVersion": "1.1.0",
+  "enabled": true
+}

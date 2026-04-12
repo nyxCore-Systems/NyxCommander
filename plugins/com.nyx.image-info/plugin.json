@@ -1,0 +1,14 @@
+{
+  "id": "com.nyx.image-info",
+  "name": "Image Info",
+  "version": "1.0.0",
+  "description": "Shows pixel dimensions (W×H) for image files in a column — reads headers, no dependencies",
+  "author": "Nyx",
+  "category": "column",
+  "fileExtensions": ["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico", "tiff", "tif"],
+  "columnName": "Dimensions",
+  "columnWidth": 90,
+  "entrypoint": "plugin.py",
+  "minAppVersion": "1.1.0",
+  "enabled": true
+}
